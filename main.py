@@ -29,7 +29,7 @@ def evaluate_calculation():
 ###Edw tha exoume to katharismo ths metavlhths
 def clear_field(Mx):
     global calculation
-    calculation= ""
+    calculation= []
     text_calculation.delete(1.0, "end")
 
 
@@ -57,6 +57,8 @@ button_mminus = tk.Button(calculator,text="M-", command=lambda: clear_field(mmin
 button_mminus.grid(row=3,column=3,columnspan=1,sticky="ew")
 button_ms = tk.Button(calculator,text="MS", command=lambda: clear_field(ms),width=1,font=("Arial", 12))
 button_ms.grid(row=3,column=4,columnspan=1,sticky="ew")
+button_trigonometry = tk.Button(calculator,text="Trigonometry",width=1,font=("Arial", 12))
+button_trigonometry.grid(row=4,column=0,columnspan=3,sticky="ew")
 
 calculator.mainloop()
 

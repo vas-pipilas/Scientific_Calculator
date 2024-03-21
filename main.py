@@ -137,3 +137,5 @@ button_calculation.grid(row=11,column=4,columnspan=1,sticky="ew")
 
 calculator.mainloop()
 
+if __name__ == "__main__":
+    main()

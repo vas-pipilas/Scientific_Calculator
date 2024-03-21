@@ -59,6 +59,21 @@ button_ms = tk.Button(calculator,text="MS", command=lambda: clear_field(ms),widt
 button_ms.grid(row=3,column=4,columnspan=1,sticky="ew")
 button_trigonometry = tk.Button(calculator,text="Trigonometry",width=1,font=("Arial", 12))
 button_trigonometry.grid(row=4,column=0,columnspan=3,sticky="ew")
+button_pi = tk.Button(calculator,text="π",width=1,font=("Arial", 12))
+button_pi.grid(row=5,column=0,columnspan=1,sticky="ew")
+button_e = tk.Button(calculator,text="e",width=1,font=("Arial", 12))
+button_e.grid(row=5,column=1,columnspan=1,sticky="ew")
+button_clear = tk.Button(calculator,text="C",width=1,font=("Arial", 12))
+button_clear.grid(row=5,column=2,columnspan=1,sticky="ew")
+button_eraser = tk.Button(calculator,text="<==",width=1,font=("Arial", 12)) ###Eraser Button. It should remove only the last entry##
+button_eraser.grid(row=5,column=2,columnspan=1,sticky="ew")
+button_x2 = tk.Button(calculator,text="x2",width=1,font=("Arial", 12))
+button_x2.grid(row=6,column=0,columnspan=1,sticky="ew")
+button_1divx = tk.Button(calculator,text="1/x",width=1,font=("Arial", 12))
+button_1divx.grid(row=6,column=1,columnspan=1,sticky="ew")
+button_absolutex = tk.Button(calculator,text="|x|",width=1,font=("Arial", 12))
+button_absolutex.grid(row=6,column=1,columnspan=1,sticky="ew")
+
 
 calculator.mainloop()
 

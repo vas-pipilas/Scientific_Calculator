@@ -34,7 +34,6 @@ def clear_field():
     calculation= []
     text_calculation.delete(1.0, "end")
 
-
 calculator = tk.Tk()
 calculator.title("Scientific Calculator by PLHPRO Team :) ")
 calculator.geometry("640x480")
@@ -136,6 +135,3 @@ button_calculation = tk.Button(calculator,text="=",width=1,font=("Arial", 12),co
 button_calculation.grid(row=11,column=4,columnspan=1,sticky="ew")
 
 calculator.mainloop()
-
-if __name__ == "__main__":
-    main()

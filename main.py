@@ -5,14 +5,44 @@
 import tkinter as tk
 import math as math
 
+###########PLACEHOLDER NOTES PLEASE REMOVE WHEN NOT NEEDED########
+
+#f. Trigonometric Functions:
+
+#Sine: math.sin(x)
+#Cosine: math.cos(x)
+#Tangent: math.tan(x)
+#Arcsine: math.asin(x)
+#Arccosine: math.acos(x)
+#Arctangent: math.atan(x)
+
+#g. Hyperbolic Functions:
+
+#Hyperbolic Sine: math.sinh(x)
+#Hyperbolic Cosine: math.cosh(x)
+#Hyperbolic Tangent: math.tanh(x)
+#Inverse Hyperbolic Sine: math.asinh(x)
+#Inverse Hyperbolic Cosine: math.acosh(x)
+#Inverse Hyperbolic Tangent: math.atanh(x)
+##################################################
+
+
 calculation = []
+trigonometry_popup_is_Open = False
 
 ###edw tha prosthetoume tis times sthn metavlhth mesw sthn function
 def add_to_calculation(symbol):
     global calculation
-    calculation += str(symbol)
-    text_calculation.delete(1.0, "end")
-    text_calculation.insert(1.0, calculation)
+    if text_result.get(1.0,"end").strip() == "Maximum Length of 20 Digits Reached": ###In case Error is present it clears also the results field
+        text_result.delete(1.0, "end")
+    if len(calculation) < 20: ## 20 Digits Length
+        calculation += str(symbol)
+        text_calculation.delete(1.0, "end")
+        text_calculation.insert(1.0, calculation)
+    else:
+        text_calculation.insert(1.0, "3.129E-99") ##Print Error and clear calculation table
+        text_result.insert(1.0, "Maximum Length of 20 Digits Reached")  ###Print Error in the Result Field.
+        calculation=[]
 
 ###edw tha ypologizoyme to apotelesma me thn parakatw function
 def evaluate_calculation():
@@ -36,7 +66,7 @@ def clear_field():
 
 calculator = tk.Tk()
 calculator.title("Scientific Calculator by PLHPRO Team :) ")
-calculator.geometry("640x480")
+calculator.geometry("735x400")
 
 ###parathyro pou mas deixnei thn praksh oso proxwrame
 text_calculation=tk.Text(calculator, height=1 , width=40,font=("Arial", 24))
@@ -46,6 +76,48 @@ text_calculation.grid(columnspan=6)
 ##parathyro mono gia to apotelesma
 text_result=tk.Text(calculator, height=1 , width=40,font=("Arial", 24))
 text_result.grid(columnspan=6)
+
+###popup window trigonometry####
+def trigonometry_popup_window():
+    global trigonometry_popup_is_Open
+    if trigonometry_popup_is_Open is False: ##Logical stop of opening multiple same popup windows
+        popup = tk.Toplevel(calculator)
+        popup.title("Trigonometry Functions")
+        popup.geometry("250x200")
+        button_sine = tk.Button(popup, text="sin", width=5, font=("Arial", 12))
+        button_sine.grid(row=0, column=0, columnspan=1, sticky="ew")
+        button_cosine = tk.Button(popup, text="cos", width=5, font=("Arial", 12))
+        button_cosine.grid(row=0, column=1, columnspan=1, sticky="ew")
+        button_Tangent = tk.Button(popup, text="tan", width=5, font=("Arial", 12))
+        button_Tangent.grid(row=0, column=2, columnspan=1, sticky="ew")
+        button_Arcsine = tk.Button(popup, text="asin", width=5, font=("Arial", 12))
+        button_Arcsine.grid(row=0, column=3, columnspan=1, sticky="ew")
+        button_Arccosine = tk.Button(popup, text="acos", width=5, font=("Arial", 12))
+        button_Arccosine.grid(row=1, column=0, columnspan=1, sticky="ew")
+        button_Arctangent = tk.Button(popup, text="atan", width=5, font=("Arial", 12))
+        button_Arctangent.grid(row=1, column=1, columnspan=1, sticky="ew")
+        button_Hyperbolic_Sine = tk.Button(popup, text="sinh", width=5, font=("Arial", 12))
+        button_Hyperbolic_Sine.grid(row=2, column=0, columnspan=1, sticky="ew")
+        button_Hyperbolic_Cosine = tk.Button(popup, text="cosh", width=5, font=("Arial", 12))
+        button_Hyperbolic_Cosine.grid(row=2, column=1, columnspan=1, sticky="ew")
+        button_Hyperbolic_Tangent = tk.Button(popup, text="tanh", width=5, font=("Arial", 12))
+        button_Hyperbolic_Tangent.grid(row=2, column=2, columnspan=1, sticky="ew")
+        button_Inverse_Hyperbolic_Sine = tk.Button(popup, text="asinh", width=5, font=("Arial", 12))
+        button_Inverse_Hyperbolic_Sine.grid(row=3, column=0, columnspan=1, sticky="ew")
+        button_Inverse_Hyperbolic_Cosine = tk.Button(popup, text="acosh", width=5, font=("Arial", 12))
+        button_Inverse_Hyperbolic_Cosine.grid(row=3, column=1, columnspan=1, sticky="ew")
+        button_Inverse_Hyperbolic_Tangent = tk.Button(popup, text="atanh", width=5, font=("Arial", 12))
+        button_Inverse_Hyperbolic_Tangent.grid(row=3, column=1, columnspan=1, sticky="ew")
+        button_convert_degrees_to_radians = tk.Button(popup, text="ToRAD", width=5, font=("Arial", 12))
+        button_convert_degrees_to_radians.grid(row=4, column=0, columnspan=1, sticky="ew")
+        button_convert_radians_to_degrees = tk.Button(popup, text="ToDEG", width=5, font=("Arial", 12))
+        button_convert_radians_to_degrees.grid(row=4, column=1, columnspan=1, sticky="ew")
+        trigonometry_popup_is_Open=True
+        def on_close(): ###change attribute on Popup Close event
+            global trigonometry_popup_is_Open
+            trigonometry_popup_is_Open = False
+            popup.destroy()
+        popup.protocol("WM_DELETE_WINDOW", on_close)
 
 #####Buttons#########
 
@@ -61,7 +133,7 @@ button_mminus = tk.Button(calculator,text="M-", command=lambda: clear_field(mmin
 button_mminus.grid(row=3,column=3,columnspan=1,sticky="ew")
 button_ms = tk.Button(calculator,text="MS", command=lambda: clear_field(ms),width=1,font=("Arial", 12))
 button_ms.grid(row=3,column=4,columnspan=1,sticky="ew")
-button_trigonometry = tk.Button(calculator,text="Trigonometry",width=1,font=("Arial", 12))
+button_trigonometry = tk.Button(calculator,text="Trigonometry",width=1,font=("Arial", 12), command=trigonometry_popup_window)
 button_trigonometry.grid(row=4,column=0,columnspan=3,sticky="ew")
 button_pi = tk.Button(calculator,text="π",width=1,font=("Arial", 12))
 button_pi.grid(row=5,column=0,columnspan=1,sticky="ew")

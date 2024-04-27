@@ -1,209 +1,413 @@
-##############################
-####Scientific Calculator#####
-###############################
-
 import tkinter as tk
-import math as math
-
-###########PLACEHOLDER NOTES PLEASE REMOVE WHEN NOT NEEDED########
-
-#f. Trigonometric Functions:
-
-#Sine: math.sin(x)
-#Cosine: math.cos(x)
-#Tangent: math.tan(x)
-#Arcsine: math.asin(x)
-#Arccosine: math.acos(x)
-#Arctangent: math.atan(x)
-
-#g. Hyperbolic Functions:
-
-#Hyperbolic Sine: math.sinh(x)
-#Hyperbolic Cosine: math.cosh(x)
-#Hyperbolic Tangent: math.tanh(x)
-#Inverse Hyperbolic Sine: math.asinh(x)
-#Inverse Hyperbolic Cosine: math.acosh(x)
-#Inverse Hyperbolic Tangent: math.atanh(x)
-##################################################
-
+import math
 
 calculation = []
-trigonometry_popup_is_Open = False
+result = ""  # Define result globally
+memory = 0  # Initialize memory
+trigonometry_menu = None
 
-###edw tha prosthetoume tis times sthn metavlhth mesw sthn function
+
 def add_to_calculation(symbol):
-    global calculation
-    if text_result.get(1.0,"end").strip() == "Maximum Length of 20 Digits Reached": ###In case Error is present it clears also the results field
-        text_result.delete(1.0, "end")
-    if len(calculation) < 20: ## 20 Digits Length
-        calculation += str(symbol)
-        text_calculation.delete(1.0, "end")
-        text_calculation.insert(1.0, calculation)
+    global calculation, result
+    if len(result) > 20:
+        result = "Maximum Length of 20 Digits Reached";
+    if len(calculation) < 20:
+        if callable(symbol):
+            # If the symbol is a function, call it with the current text input as its argument
+            result = str(symbol(calculation))
+            update_display(''.join(calculation), result)
+        else:
+            # If the symbol is not a function, append it to the calculation
+            calculation.append(str(symbol))
+            update_display(''.join(calculation), result)
     else:
-        text_calculation.insert(1.0, "3.129E-99") ##Print Error and clear calculation table
-        text_result.insert(1.0, "Maximum Length of 20 Digits Reached")  ###Print Error in the Result Field.
-        calculation=[]
+        update_display("3.129E-99", "Maximum Length of 20 Digits Reached")
+        calculation = []
 
-###edw tha ypologizoyme to apotelesma me thn parakatw function
+
 def evaluate_calculation():
-    global calculation
+    global calculation, result
     try:
         calculation_str = ''.join(calculation)
-        calculation=str(eval(calculation_str))
-        text_result.delete(1.0, "end")
-        text_result.insert(1.0, calculation)
+        if 'mod' in calculation_str:
+            dividend, divisor = calculation_str.split('mod')
+            result = str(int(dividend) % int(divisor))
+            update_display(calculation_str, result)
+        else:
+            result = str(eval(calculation_str))
+            update_display(calculation_str, result)
     except:
         clear_field()
-        text_calculation.insert(1.0, "ERROR!!")
-        pass
+        update_display("ERROR!!", "")
 
 
-###Edw tha exoume to katharismo ths metavlhths
 def clear_field():
+    global calculation, result
+    calculation = []
+    result = ""
+    update_display("", "")
+
+
+def trigonometry_flyout_window():
+    global trigonometry_menu
+    trigonometry_menu = tk.Menu(calculator, tearoff=0)
+
+    # Define the labels and corresponding commands for each button
+    button_labels = ["sin", "cos", "tan", "asin", "acos", "atan", "sinh", "cosh", "tanh", "asinh", "acosh", "atanh",
+                     "ToRAD", "ToDEG"]
+    button_commands = [math.sin, math.cos, math.tan, math.asin, math.acos, math.atan, math.sinh, math.cosh, math.tanh,
+                       math.asinh, math.acosh, math.atanh, lambda x: x * math.pi / 180, math.degrees]
+
+    # Add buttons to the menu in a grid layout
+    row = 0
+    col = 0
+    for label, command in zip(button_labels, button_commands):
+        trigonometry_menu.add_command(label=label, command=lambda cmd=command: handle_trigonometry_command(cmd))
+
+    # Add the menu to the calculator window at a fixed position
+    trigonometry_menu.post(calculator.winfo_x() + 150, calculator.winfo_y() + 100)
+
+
+def handle_trigonometry_command(command):
+    global calculation, result
+    if callable(command):  # If command is a function, call it directly
+        if command.__name__ == "ToRAD" or command.__name__ == "ToDEG":
+            # add_to_calculation(command(0))  # Pass 0 as the argument for degree/radian conversion
+            result = str(command(0))
+            update_display(f"{command.__name__}(0)", result)
+        else:
+            try:
+                # Extract the last value from the calculation list and convert it to a float
+                value = float(calculation[0]) if calculation else 0
+                result = str(command(value))
+                update_display(f"{command.__name__}({value})", result)
+                # add_to_calculation(command(value))
+            except ValueError:
+                clear_field()
+                update_display(''.join(calculation), "Invalid input. Please enter a valid number.")
+    else:  # If command is not a function, it's a value or expression
+        add_to_calculation(str(command))
+
+
+def update_display(calculation, result):
+    text_display.delete(1.0, "end")  # Clear the current content
+    text_display.insert("end", f"{calculation}\n{result}")
+
+
+def change_sign():
+    global calculation,result
+    try:
+        # Extract the current number from the calculation string
+        num_str = ''.join(calculation)
+
+        # Convert the current number to a float
+        num = float(num_str)
+
+        # Check if the number is an integer
+        is_integer = num.is_integer()
+
+        # Change the sign of the number
+        num = -num if num >= 0 else abs(num)
+
+        # Convert the number back to an integer if it was originally an integer
+        if is_integer:
+            num = int(num)
+
+        # Update the calculation list with the new number
+        calculation = [str(num)]
+
+        # Update the display with the modified number
+        update_display(''.join(calculation), "")
+    except ValueError:
+        # If the input is not a valid number, clear the field and display an error message
+        clear_field()
+        update_display("Invalid input. Please enter a valid number.", "")
+
+
+def absolute_value():
+    global calculation, result
+    try:
+        # Join the calculation list to form a string expression
+        expression = ''.join(calculation)
+
+        # Evaluate the expression
+        result = str(eval(expression))
+
+        # Calculate the absolute value of the result
+        result = str(abs(float(result)))
+
+        # Update the calculation list with the absolute value action
+        calculation = [f"|{expression}|"]
+
+        # Update the display with the absolute value result
+        update_display(''.join(calculation), result)
+    except ValueError:
+        # If the result is not a valid number, display an error message
+        clear_field()
+        update_display("Invalid input. Please enter a valid number.", "")
+    except:
+        # If there is any other error, clear the field and display an error message
+        clear_field()
+        update_display("Error occurred while calculating.", "")
+
+def reciprocal():
+    global calculation, result
+    try:
+        # Join the calculation list to form a string expression
+        expression = ''.join(calculation)
+
+        # Evaluate the expression
+        result = float(eval(expression))
+
+        # Check if x is not equal to zero
+        if result != 0:
+            # Calculate the reciprocal (1/x) of the result
+            result = round(1 / result, 5)
+            result = str(result)
+
+            # Update the calculation list with the reciprocal action
+            calculation = [f"1/({expression})"]
+
+            # Update the display with the reciprocal result
+            update_display(''.join(calculation), result)
+        else:
+            # If x is zero, display an error message
+            clear_field()
+            update_display("Error: Division by zero.", "")
+    except ValueError:
+        # If the result is not a valid number, display an error message
+        clear_field()
+        update_display("Invalid input. Please enter a valid number.", "")
+    except:
+        # If there is any other error, clear the field and display an error message
+        clear_field()
+        update_display("Error occurred while calculating.", "")
+
+def square_x():
+    global calculation, result
+    try:
+        # Join the calculation list to form a string expression
+        expression = ''.join(calculation)
+
+        # Evaluate the expression
+        result = float(eval(expression))
+
+        # Calculate the square of the result
+        result = str(round(result ** 2, 5))
+
+        # Update the display with the squared result
+        update_display(expression, result)
+
+        calculation.append("**2")
+        update_display(''.join(calculation), result)
+    except ValueError:
+        # If the result is not a valid number, display an error message
+        clear_field()
+        update_display("Invalid input. Please enter a valid number.", "")
+    except:
+        # If there is any other error, clear the field and display an error message
+        clear_field()
+        update_display("Error occurred while calculating.", "")
+
+def square_root_x():
+    global calculation, result
+    try:
+        # Join the calculation list to form a string expression
+        expression = ''.join(calculation)
+
+        # Evaluate the expression
+        result = str(eval(expression))
+
+        # Calculate the square root of the result
+        sqrt_result = math.sqrt(float(result))
+        sqrt_result = round(sqrt_result, 5)  # Limit result to 5 decimal digits
+
+        # Update the display with the square root result
+        update_display(f"sqrt({expression})", str(sqrt_result))
+    except ValueError:
+        # If the result is not a valid number, display an error message
+        clear_field()
+        update_display("Invalid input. Please enter a valid number.", "")
+    except:
+        # If there is any other error, clear the field and display an error message
+        clear_field()
+        update_display("Error occurred while calculating.", "")
+
+def ten_power_x():
+    global calculation, result
+    try:
+        expression = ''.join(calculation)
+        num = float(eval(expression))
+        result = str(10 ** num)
+        calculation = [f"10**{expression}"]
+        update_display(''.join(calculation), result)
+    except ValueError:
+        clear_field()
+        update_display("Invalid input. Please enter a valid number.", "")
+    except:
+        clear_field()
+        update_display("Error occurred while calculating.", "")
+
+def log_x():
+    global calculation, result
+    try:
+        expression = ''.join(calculation)
+        num = float(eval(expression))
+        if num > 0:
+            result = str(math.log(num))
+            calculation = [f"log({expression})"]
+            update_display(''.join(calculation), result)
+        else:
+            clear_field()
+            update_display("Invalid input. Please enter a positive number for log.", "")
+    except ValueError:
+        clear_field()
+        update_display("Invalid input. Please enter a valid number.", "")
+    except:
+        clear_field()
+        update_display("Error occurred while calculating.", "")
+
+def natural_logarithm_x():
+    global calculation, result
+    try:
+        expression = ''.join(calculation)
+        num = float(eval(expression))
+        if num > 0:
+            result = str(math.log(num))
+            calculation = [f"ln({expression})"]
+            update_display(''.join(calculation), result)
+        else:
+            clear_field()
+            update_display("Invalid input. Please enter a positive number for ln.", "")
+    except ValueError:
+        clear_field()
+        update_display("Invalid input. Please enter a valid number.", "")
+    except:
+        clear_field()
+        update_display("Error occurred while calculating.", "")
+def exponential_function_x():
+    global calculation, result
+    try:
+        expression = ''.join(calculation)
+        num = float(eval(expression))
+        result = str(math.exp(num))
+        calculation = [f"exp({expression})"]
+        update_display(''.join(calculation), result)
+    except ValueError:
+        clear_field()
+        update_display("Invalid input. Please enter a valid number.", "")
+    except:
+        clear_field()
+        update_display("Error occurred while calculating.", "")
+
+def factorial_x():
+    global calculation, result
+    try:
+        expression = ''.join(calculation)
+        num = int(eval(expression))
+        if num >= 0:
+            result = str(math.factorial(num))
+            calculation = [f"!({expression})"]
+            if len(result)>20:
+                result=result[:20]+"E-99"
+            update_display(''.join(calculation), result)
+        else:
+            clear_field()
+            update_display("Invalid input. Please enter a non-negative integer for factorial.", "")
+    except ValueError:
+        clear_field()
+        update_display("Invalid input. Please enter a valid integer.", "")
+    except:
+        clear_field()
+        update_display("Error occurred while calculating.", "")
+
+def clear_last_input():
     global calculation
-    calculation= []
-    text_calculation.delete(1.0, "end")
+    if calculation:
+        calculation.pop()
+        update_display(''.join(calculation), "")
+    else:
+        clear_field()  # Clear the entire field if calculation list is already empty
+
+
+def memory_add():
+    global memory,result
+    try:
+        calculation_str = ''.join(calculation)
+        num = eval(calculation_str)
+        memory += num
+        update_display(''.join(calculation), memory)
+    except Exception as e:
+        print("Error occurred while adding to memory:", e)
+def memory_recall():
+    global memory, calculation, result
+    try:
+        calculation_str = ''.join(calculation)
+        result = str(memory)  # Update result with the memory value
+        update_display(calculation_str, result)
+    except Exception as e:
+        print("Error occurred while recalling memory:", e)
+def memory_subtract():
+    global memory,result
+    try:
+        calculation_str = ''.join(calculation)
+        num = eval(calculation_str)
+        memory -= num
+        update_display(''.join(calculation), memory)
+    except Exception as e:
+        print("Error occurred while adding to memory:", e)
+
+def memory_store():
+    global memory, result
+    try:
+        calculation_str = ''.join(calculation)
+        num = eval(calculation_str)
+        memory = num
+        update_display(''.join(calculation), memory)
+    except Exception as e:
+        print("Error occurred while storing memory:", e)
+
+def memory_clear():
+    global memory
+    memory = 0
 
 calculator = tk.Tk()
 calculator.title("Scientific Calculator by PLHPRO Team :) ")
-calculator.geometry("735x400")
+calculator.geometry("620x337")
 
-###parathyro pou mas deixnei thn praksh oso proxwrame
-text_calculation=tk.Text(calculator, height=1 , width=40,font=("Arial", 24))
-text_calculation.pack(fill="both", expand=True)
-text_calculation.grid(columnspan=6)
+text_display = tk.Text(calculator, height=2, width=40, font=("Arial", 24))
+text_display.grid(columnspan=6)
 
-##parathyro mono gia to apotelesma
-text_result=tk.Text(calculator, height=1 , width=40,font=("Arial", 24))
-text_result.grid(columnspan=6)
+button_data = [
+    ("MC", lambda: memory_clear()), ("MR", lambda: memory_recall()), ("M+", lambda: memory_add()),
+    ("M-", lambda: memory_subtract()), ("MS", lambda: memory_store()),
+    ("Trigonometry", trigonometry_flyout_window), ("π", lambda: add_to_calculation(round(math.pi, 4))),
+    ("e", lambda: add_to_calculation(round(math.e,4))), ("C", clear_field),
+    ("<==", lambda: clear_last_input()),
+    ("x^2", lambda: square_x()), ("1/x", lambda: reciprocal()),
+    ("|x|", lambda: absolute_value()), ("exp", lambda: exponential_function_x()),
+    ("mod", lambda: add_to_calculation("mod")),
+    ("√x", lambda: square_root_x()), ("(", lambda: add_to_calculation("(")),
+    (")", lambda: add_to_calculation(")")), ("!x", lambda: factorial_x()),
+    ("/", lambda: add_to_calculation("/")),
+    ("x^y", lambda: add_to_calculation("**")), ("7", lambda: add_to_calculation(7)),
+    ("8", lambda: add_to_calculation(8)), ("9", lambda: add_to_calculation(9)), ("*", lambda: add_to_calculation("*")),
+    ("10^x", lambda: ten_power_x()), ("4", lambda: add_to_calculation(4)),
+    ("5", lambda: add_to_calculation(5)), ("6", lambda: add_to_calculation(6)), ("-", lambda: add_to_calculation("-")),
+    ("log", lambda: log_x()), ("1", lambda: add_to_calculation(1)),
+    ("2", lambda: add_to_calculation(2)), ("3", lambda: add_to_calculation(3)), ("+", lambda: add_to_calculation("+")),
+    ("ln", lambda: natural_logarithm_x()), ("+/-", lambda: change_sign()), ("0", lambda: add_to_calculation(0)),
+    (".", lambda: add_to_calculation(".")), ("=", evaluate_calculation)
+]
 
-###popup window trigonometry####
-def trigonometry_popup_window():
-    global trigonometry_popup_is_Open
-    if trigonometry_popup_is_Open is False: ##Logical stop of opening multiple same popup windows
-        popup = tk.Toplevel(calculator)
-        popup.title("Trigonometry Functions")
-        popup.geometry("250x200")
-        button_sine = tk.Button(popup, text="sin", width=5, font=("Arial", 12))
-        button_sine.grid(row=0, column=0, columnspan=1, sticky="ew")
-        button_cosine = tk.Button(popup, text="cos", width=5, font=("Arial", 12))
-        button_cosine.grid(row=0, column=1, columnspan=1, sticky="ew")
-        button_Tangent = tk.Button(popup, text="tan", width=5, font=("Arial", 12))
-        button_Tangent.grid(row=0, column=2, columnspan=1, sticky="ew")
-        button_Arcsine = tk.Button(popup, text="asin", width=5, font=("Arial", 12))
-        button_Arcsine.grid(row=0, column=3, columnspan=1, sticky="ew")
-        button_Arccosine = tk.Button(popup, text="acos", width=5, font=("Arial", 12))
-        button_Arccosine.grid(row=1, column=0, columnspan=1, sticky="ew")
-        button_Arctangent = tk.Button(popup, text="atan", width=5, font=("Arial", 12))
-        button_Arctangent.grid(row=1, column=1, columnspan=1, sticky="ew")
-        button_Hyperbolic_Sine = tk.Button(popup, text="sinh", width=5, font=("Arial", 12))
-        button_Hyperbolic_Sine.grid(row=2, column=0, columnspan=1, sticky="ew")
-        button_Hyperbolic_Cosine = tk.Button(popup, text="cosh", width=5, font=("Arial", 12))
-        button_Hyperbolic_Cosine.grid(row=2, column=1, columnspan=1, sticky="ew")
-        button_Hyperbolic_Tangent = tk.Button(popup, text="tanh", width=5, font=("Arial", 12))
-        button_Hyperbolic_Tangent.grid(row=2, column=2, columnspan=1, sticky="ew")
-        button_Inverse_Hyperbolic_Sine = tk.Button(popup, text="asinh", width=5, font=("Arial", 12))
-        button_Inverse_Hyperbolic_Sine.grid(row=3, column=0, columnspan=1, sticky="ew")
-        button_Inverse_Hyperbolic_Cosine = tk.Button(popup, text="acosh", width=5, font=("Arial", 12))
-        button_Inverse_Hyperbolic_Cosine.grid(row=3, column=1, columnspan=1, sticky="ew")
-        button_Inverse_Hyperbolic_Tangent = tk.Button(popup, text="atanh", width=5, font=("Arial", 12))
-        button_Inverse_Hyperbolic_Tangent.grid(row=3, column=1, columnspan=1, sticky="ew")
-        button_convert_degrees_to_radians = tk.Button(popup, text="ToRAD", width=5, font=("Arial", 12))
-        button_convert_degrees_to_radians.grid(row=4, column=0, columnspan=1, sticky="ew")
-        button_convert_radians_to_degrees = tk.Button(popup, text="ToDEG", width=5, font=("Arial", 12))
-        button_convert_radians_to_degrees.grid(row=4, column=1, columnspan=1, sticky="ew")
-        trigonometry_popup_is_Open=True
-        def on_close(): ###change attribute on Popup Close event
-            global trigonometry_popup_is_Open
-            trigonometry_popup_is_Open = False
-            popup.destroy()
-        popup.protocol("WM_DELETE_WINDOW", on_close)
-
-#####Buttons#########
-
-####PH in button means PlaceHolders. We will decide what we do with them ###
-
-button_mc = tk.Button(calculator,text="MC", command=lambda: clear_field(mc),width=1,font=("Arial", 12))
-button_mc.grid(row=3,column=0,columnspan=1,sticky="ew")
-button_mr = tk.Button(calculator,text="MR", command=lambda: clear_field(mr),width=1,font=("Arial", 12))
-button_mr.grid(row=3,column=1,columnspan=1,sticky="ew")
-button_mplus = tk.Button(calculator,text="M+", command=lambda: clear_field(mplus),width=1,font=("Arial", 12))
-button_mplus.grid(row=3,column=2,columnspan=1,sticky="ew")
-button_mminus = tk.Button(calculator,text="M-", command=lambda: clear_field(mminus),width=1,font=("Arial", 12))
-button_mminus.grid(row=3,column=3,columnspan=1,sticky="ew")
-button_ms = tk.Button(calculator,text="MS", command=lambda: clear_field(ms),width=1,font=("Arial", 12))
-button_ms.grid(row=3,column=4,columnspan=1,sticky="ew")
-button_trigonometry = tk.Button(calculator,text="Trigonometry",width=1,font=("Arial", 12), command=trigonometry_popup_window)
-button_trigonometry.grid(row=4,column=0,columnspan=3,sticky="ew")
-button_pi = tk.Button(calculator,text="π",width=1,font=("Arial", 12))
-button_pi.grid(row=5,column=0,columnspan=1,sticky="ew")
-button_e = tk.Button(calculator,text="e",width=1,font=("Arial", 12))
-button_e.grid(row=5,column=1,columnspan=1,sticky="ew")
-button_clear = tk.Button(calculator,text="C",width=1,font=("Arial", 12))
-button_clear.grid(row=5,column=2,columnspan=1,sticky="ew")
-button_eraser = tk.Button(calculator,text="<==",width=1,font=("Arial", 12)) ###Eraser Button. It should remove only the last entry##
-button_eraser.grid(row=5,column=3,columnspan=1,sticky="ew")
-button_x2 = tk.Button(calculator,text="x2",width=1,font=("Arial", 12))
-button_x2.grid(row=6,column=0,columnspan=1,sticky="ew")
-button_1divx = tk.Button(calculator,text="1/x",width=1,font=("Arial", 12))
-button_1divx.grid(row=6,column=1,columnspan=1,sticky="ew")
-button_absolutex = tk.Button(calculator,text="|x|",width=1,font=("Arial", 12))
-button_absolutex.grid(row=6,column=2,columnspan=1,sticky="ew")
-button_placeholder = tk.Button(calculator,text="PH",width=1,font=("Arial", 12))
-button_placeholder.grid(row=6,column=3,columnspan=1,sticky="ew")
-button_mod = tk.Button(calculator,text="mod",width=1,font=("Arial", 12))
-button_mod.grid(row=6,column=4,columnspan=1,sticky="ew")
-button_mod = tk.Button(calculator,text="mod",width=1,font=("Arial", 12))
-button_mod.grid(row=6,column=4,columnspan=1,sticky="ew")
-button_root = tk.Button(calculator,text="√x",width=1,font=("Arial", 12))
-button_root.grid(row=7,column=0,columnspan=1,sticky="ew")
-button_leftparenthesis = tk.Button(calculator,text="(",width=1,font=("Arial", 12),command=lambda: add_to_calculation("("))
-button_leftparenthesis.grid(row=7,column=1,columnspan=1,sticky="ew")
-button_rightparenthesis = tk.Button(calculator,text=")",width=1,font=("Arial", 12),command=lambda: add_to_calculation(")"))
-button_rightparenthesis.grid(row=7,column=2,columnspan=1,sticky="ew")
-button_paragontiko = tk.Button(calculator,text="!x",width=1,font=("Arial", 12))
-button_paragontiko.grid(row=7,column=3,columnspan=1,sticky="ew")
-button_div = tk.Button(calculator,text="/",width=1,font=("Arial", 12),command=lambda: add_to_calculation("/"))
-button_div.grid(row=7,column=4,columnspan=1,sticky="ew")
-button_xpowery = tk.Button(calculator,text="x^y",width=1,font=("Arial", 12))
-button_xpowery.grid(row=8,column=0,columnspan=1,sticky="ew")
-button_7 = tk.Button(calculator,text="7",width=1,font=("Arial", 12),command=lambda: add_to_calculation("7"))
-button_7.grid(row=8,column=1,columnspan=1,sticky="ew")
-button_8 = tk.Button(calculator,text="8",width=1,font=("Arial", 12),command=lambda: add_to_calculation("8"))
-button_8.grid(row=8,column=2,columnspan=1,sticky="ew")
-button_9 = tk.Button(calculator,text="9",width=1,font=("Arial", 12),command=lambda: add_to_calculation("9"))
-button_9.grid(row=8,column=3,columnspan=1,sticky="ew")
-button_multiply = tk.Button(calculator,text="*",width=1,font=("Arial", 12),command=lambda: add_to_calculation("*"))
-button_multiply.grid(row=8,column=4,columnspan=1,sticky="ew")
-button_placeholder = tk.Button(calculator,text="PH",width=1,font=("Arial", 12))
-button_placeholder.grid(row=9,column=0,columnspan=1,sticky="ew")
-button_4 = tk.Button(calculator,text="4",width=1,font=("Arial", 12),command=lambda: add_to_calculation("4"))
-button_4.grid(row=9,column=1,columnspan=1,sticky="ew")
-button_5 = tk.Button(calculator,text="5",width=1,font=("Arial", 12),command=lambda: add_to_calculation("5"))
-button_5.grid(row=9,column=2,columnspan=1,sticky="ew")
-button_6 = tk.Button(calculator,text="6",width=1,font=("Arial", 12),command=lambda: add_to_calculation("6"))
-button_6.grid(row=9,column=3,columnspan=1,sticky="ew")
-button_minus = tk.Button(calculator,text="-",width=1,font=("Arial", 12),command=lambda: add_to_calculation("-"))
-button_minus.grid(row=9,column=4,columnspan=1,sticky="ew")
-button_log = tk.Button(calculator,text="log",width=1,font=("Arial", 12))
-button_log.grid(row=10,column=0,columnspan=1,sticky="ew")
-button_1 = tk.Button(calculator,text="1",width=1,font=("Arial", 12),command=lambda: add_to_calculation("1"))
-button_1.grid(row=10,column=1,columnspan=1,sticky="ew")
-button_2 = tk.Button(calculator,text="2",width=1,font=("Arial", 12),command=lambda: add_to_calculation("2"))
-button_2.grid(row=10,column=2,columnspan=1,sticky="ew")
-button_3 = tk.Button(calculator,text="3",width=1,font=("Arial", 12),command=lambda: add_to_calculation("3"))
-button_3.grid(row=10,column=3,columnspan=1,sticky="ew")
-button_plus = tk.Button(calculator,text="+",width=1,font=("Arial", 12),command=lambda: add_to_calculation("+"))
-button_plus.grid(row=10,column=4,columnspan=1,sticky="ew")
-button_ln = tk.Button(calculator,text="ln",width=1,font=("Arial", 12))
-button_ln.grid(row=11,column=0,columnspan=1,sticky="ew")
-button_changesign = tk.Button(calculator,text="+/-",width=1,font=("Arial", 12))
-button_changesign.grid(row=11,column=1,columnspan=1,sticky="ew")
-button_0 = tk.Button(calculator,text="0",width=1,font=("Arial", 12),command=lambda: add_to_calculation("0"))
-button_0.grid(row=11,column=2,columnspan=1,sticky="ew")
-button_separator = tk.Button(calculator,text=".",width=1,font=("Arial", 12),command=lambda: add_to_calculation("."))
-button_separator.grid(row=11,column=3,columnspan=1,sticky="ew")
-button_calculation = tk.Button(calculator,text="=",width=1,font=("Arial", 12),command=evaluate_calculation)
-button_calculation.grid(row=11,column=4,columnspan=1,sticky="ew")
+for i, (text, command) in enumerate(button_data):
+    row = i // 5 + 3
+    column = i % 5
+    if command:
+        tk.Button(calculator, text=text, width=1, font=("Arial", 12), command=command).grid(row=row, column=column,
+                                                                                            columnspan=1, sticky="ew")
+    else:
+        tk.Button(calculator, text=text, width=1, font=("Arial", 12)).grid(row=row, column=column, columnspan=1,
+                                                                           sticky="ew")
 
 calculator.mainloop()

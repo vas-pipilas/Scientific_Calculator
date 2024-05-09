@@ -9,34 +9,53 @@ class TrigonometryMenu:
         self.create_menu()
 
     def create_menu(self):
-        # Define the labels and corresponding commands for each button
-        button_labels = ["sin", "cos", "tan", "asin", "acos", "atan", "sinh", "cosh", "tanh", "asinh", "acosh", "atanh",
-                         "ToRAD", "ToDEG"]
-        button_commands = [math.sin, math.cos, math.tan, math.asin, math.acos, math.atan, math.sinh, math.cosh, math.tanh,
-                           math.asinh, math.acosh, math.atanh, lambda x: x * math.pi / 180, math.degrees]
+        button_labels =  [("sin", math.sin, "radians"), ("cos", math.cos, "radians"), 
+                         ("tan", math.tan, "radians"), ("asin", math.asin, "degrees"), 
+                         ("acos", math.acos, "degrees"), ("atan", math.atan, "degrees"), 
+                         ("sinh", math.sinh, "radians"), ("cosh", math.cosh, "radians"), 
+                         ("tanh", math.tanh, "radians"), ("asinh", math.asinh, "degrees"), 
+                         ("acosh", math.acosh, "degrees"), ("atanh", math.atanh, "degrees"), 
+                         ("ToRAD", lambda x: x * math.pi / 180, "degrees"), 
+                         ("ToDEG", math.degrees, "radians")]
 
-        # Add buttons to the menu in a grid layout
-        for label, command in zip(button_labels, button_commands):
-            self.menu.add_command(label=label, command=lambda cmd=command: self.handle_trigonometry_command(cmd))
+        for label, command, unit in button_labels:
+             self.menu.add_command(label=label, command=lambda cmd=command, u=unit: self.handle_trigonometry_command(cmd, u))
 
     def trigonometry_flyout_window(self):
         self.menu.post(self.calculator_window.winfo_x() + 150, self.calculator_window.winfo_y() + 100)
 
-    def handle_trigonometry_command(self, command):
+    def handle_trigonometry_command(self, command, unit):
         try:
-            # Extract the last value from the calculation list and convert it to a float
-            value = float(self.calculator.calculation[0]) if self.calculator.calculation else 0
-            result = ""
-            if callable(command):  # If command is a function, call it directly
-                if command.__name__ == "ToRAD" or command.__name__ == "ToDEG":
-                    result = str(command(0))
-                    self.calculator.result = result
-                    self.calculator.update_display(f"{command.__name__}(0)", result)
-                else:
-                    result = str(command(value))
-                    self.calculator.update_display(f"{command.__name__}({value})", result)
-            else:  # If command is not a function, it's a value or expression
+            if callable(command):
+                result = self.compute_trigonometric_function(command, unit)
+                self.update_display(''.join(self.calculator.calculation), result)
+            else:
                 self.calculator.add_to_calculation(str(command))
         except ValueError:
             self.calculator.clear_field()
             self.calculator.update_display(''.join(self.calculator.calculation), "Invalid input. Please enter a valid number.")
+        except Exception as e:
+            self.calculator.clear_field()
+            self.calculator.update_display("Error occurred while calculating.", "")
+
+    def compute_trigonometric_function(self, function, unit):
+        expression = ''.join(self.calculator.calculation)
+        if self.calculator.result or expression:
+            cal = self.calculator.result if (self.calculator.result is not None and self.calculator.result != "") else expression
+            num = float(eval(cal))
+            
+            if unit == "radians":
+                angle_radians = num * math.pi / 180
+            elif unit == "degrees":
+                angle_radians = num
+            
+            result = function(angle_radians)
+            self.calculator.result = str(result)
+            self.calculator.calculation = [f"{function.__name__}({expression})"]
+            return result
+        else:
+            self.calculator.clear_field()
+            self.calculator.update_display("Error: No input provided.", "")
+
+    def update_display(self, expression, result):
+        self.calculator.update_display(expression, str(result))

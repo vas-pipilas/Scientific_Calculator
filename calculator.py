@@ -1,5 +1,5 @@
 import tkinter as tk
-import math
+from math import *
 from memory import Memory
 from trigonometry import TrigonometryMenu
 
@@ -11,22 +11,24 @@ class Calculator:
 
         self.calculator = tk.Tk()
         self.calculator.title("Επιστημονικός Υπολογιστής από την ομάδα PLHPRO :) ")
-        self.calculator.geometry("620x370")
         self.trigonometry_menu = TrigonometryMenu(self.calculator, self)
 
         self.text_display = tk.Text(self.calculator, height=2, width=40, font=("Arial", 24))
-        self.text_display.grid(columnspan=6)
-        
+        self.text_display.grid(row=0, column=0, columnspan=5)
+
+        button_width = self.text_display.winfo_width() // 5  # Adjust according to the number of columns
+        button_height = self.text_display.winfo_height()
+
         button_data = [
             ("MC", lambda: self.memory_clear()), ("MR", lambda: self.memory_recall()), ("M+", lambda: self.memory_add()),
             ("M-", lambda: self.memory_subtract()), ("MS", lambda: self.memory_store()),
-            ("Τριγωνομετρία", self.trigonometry_menu.trigonometry_flyout_window), ("π", lambda: self.add_to_calculation(round(math.pi, 4))),
-            ("e", lambda: self.add_to_calculation(round(math.e, 4))), ("C", self.clear_field),
-            ("<==", lambda: self.clear_last_input()),
-            ("x^2", lambda: self.square_x()), ("1/x", lambda: self.reciprocal()),
+            ("Τριγωνομετρία", self.trigonometry_menu.trigonometry_flyout_window), ("π", lambda: self.add_to_calculation(round(pi, 4))),
+            ("e", lambda: self.add_to_calculation(round(e, 4))), ("C", self.clear_field),
+            ("AC", lambda: self.clear_last_input_and_memory()),
+            ("1/x", lambda: self.reciprocal()),
             ("|x|", lambda: self.absolute_value()), ("exp", lambda: self.exponential_function_x()),
-            ("mod", lambda: self.add_to_calculation("mod")),
-            ("√x", lambda: self.square_root_x()), ("(", lambda: self.add_to_calculation("(")),
+            ("mod", lambda: self.add_to_calculation("mod")),("<==", lambda: self.clear_last_input()),
+            ("x^2", lambda: self.square_x()), ("(", lambda: self.add_to_calculation("(")),
             (")", lambda: self.add_to_calculation(")")), ("n!", lambda: self.factorial_x()),
             ("/", lambda: self.add_to_calculation("/")),
             ("x^y", lambda: self.add_to_calculation("**")), ("7", lambda: self.add_to_calculation(7)),
@@ -37,16 +39,22 @@ class Calculator:
             ("2", lambda: self.add_to_calculation(2)), ("3", lambda: self.add_to_calculation(3)), ("+", lambda: self.add_to_calculation("+")),
             ("ln", lambda: self.natural_logarithm_x()), ("+/-", lambda: self.change_sign()), ("0", lambda: self.add_to_calculation(0)),
             (".", lambda: self.add_to_calculation(".")), ("=", self.evaluate_calculation) ,
-            ("n√x", lambda: self.add_to_calculation("root"))
+            ("√x", lambda: self.square_root_x()),("n√x", lambda: self.add_to_calculation("root"))
         ]
 
         for i, (text, command) in enumerate(button_data):
             row = i // 5 + 3
             column = i % 5
             if command:
-                tk.Button(self.calculator, text=text, width=1, font=("Arial", 12), command=command).grid(row=row, column=column, columnspan=1, sticky="ew")
+                tk.Button(self.calculator, text=text, width=button_width, height=button_height, font=("Arial", 12), command=command).grid(row=row, column=column, columnspan=1, sticky="ew")
             else:
-                tk.Button(self.calculator, text=text, width=1, font=("Arial", 12)).grid(row=row, column=column, columnspan=1, sticky="ew")
+                tk.Button(self.calculator, text=text, width=button_width, height=button_height, font=("Arial", 12)).grid(row=row, column=column, columnspan=1, sticky="ew")
+
+        
+        total_button_height = button_height * (len(button_data) - 1)
+        window_height = total_button_height * ((len(button_data) - 1) // 5 + 1)
+
+        self.calculator.geometry(f"{self.text_display.winfo_reqwidth()}x{window_height}")
 
         self.calculator.bind("<Key>", self.handle_key_input)
         self.calculator.mainloop()
@@ -61,13 +69,19 @@ class Calculator:
             self.clear_last_input()
 
     def add_to_calculation(self, symbol):
-        if len(self.result) > 20:
-            self.result = "Μέγιστο Μήκος 20 Ψηφίων Επετεύχθη";
+        if isinstance(self.result, str):  # Έλεγχος αν το self.result είναι συμβολοσειρά
+            if len(self.result) > 20:
+                self.update_display("Επετεύχθη Μέγιστο Μήκος 20 Ψηφίων", "")
+        else:  # Αν το self.result δεν είναι συμβολοσειρά, υποθέτουμε ότι είναι αριθμός
+            if self.result > 20:
+                self.update_display("Επετεύχθη Μέγιστο Μήκος 20 Ψηφίων", "")
         if len(self.calculation) < 20:
             if callable(symbol):
                 self.result = str(symbol(self.calculation))
                 self.update_display(''.join(self.calculation), self.result)
             else:
+                if symbol == 2.7183 or symbol == 3.1416:
+                    self.clear_field()
                 self.calculation.append(str(symbol))
                 self.update_display(''.join(self.calculation), self.result)
         else:
@@ -88,8 +102,12 @@ class Calculator:
                 x = int(x) if x else n
                 result = self.nth_root_x(n, x)
             else:
-                result = eval(calculation_str)
+                memory_num = self.memory.recall() if self.memory.recall() is not None else 0
 
+                if calculation_str:
+                    result = eval(calculation_str)
+                else:
+                    result = memory_num
             if isinstance(result, int):
                 formatted_result = "{:,}".format(result)
             else:
@@ -127,6 +145,10 @@ class Calculator:
         else:
             self.clear_field()
 
+    def clear_last_input_and_memory(self):
+            self.clear_last_input()
+            self.memory_clear()
+
     def change_sign(self):
         try:
             num_str = ''.join(self.calculation)
@@ -139,7 +161,7 @@ class Calculator:
             self.update_display(''.join(self.calculation), "")
         except ValueError:
             self.clear_field()
-            self.update_display("Μη έγκυρη είσοδος. Παρακαλώ εισάγετε έγκυρο αριθμό.", "")
+            self.update_display("Μη έγκυρη είσοδος.", "")
 
     def absolute_value(self):
         try:
@@ -155,7 +177,7 @@ class Calculator:
                 self.update_display("Σφάλμα: Δεν δόθηκε είσοδος.", "")
         except ValueError:
             self.clear_field()
-            self.update_display("Μη έγκυρη είσοδος. Παρακαλώ εισάγετε έγκυρο αριθμό.", "")
+            self.update_display("Μη έγκυρη είσοδος.", "")
         except:
             self.clear_field()
             self.update_display("Σφάλμα κατά τον υπολογισμό.", "")
@@ -193,13 +215,13 @@ class Calculator:
                     self.update_display(''.join(self.calculation), self.result)
                 else:
                     self.clear_field()
-                    self.update_display("Μη έγκυρη είσοδος. Παρακαλώ εισάγετε θετικό αριθμό για το τετράγωνο.", "")
+                    self.update_display("Παρακαλώ εισάγετε θετικό αριθμό για το τετράγωνο.", "")
             else:
                 self.clear_field()
                 self.update_display("Δεν υπάρχει προηγούμενο αποτέλεσμα για τον υπολογισμό του τετραγώνου.", "")
         except ValueError:
             self.clear_field()
-            self.update_display("Μη έγκυρη είσοδος. Παρακαλώ εισάγετε έγκυρο αριθμό.", "")
+            self.update_display("Μη έγκυρη είσοδος.", "")
         except:
             self.clear_field()
             self.update_display("Σφάλμα κατά τον υπολογισμό.", "")
@@ -211,19 +233,19 @@ class Calculator:
                 cal = self.result if (self.result is not None and self.result != "") else expression
                 num = float(cal)
                 if(num >= 0):
-                    self.result = math.sqrt(num)
+                    self.result = sqrt(num)
                     self.result = round(self.result, 5)
                     self.calculation = [f"sqrt({expression})"]
                     self.update_display(''.join(self.calculation), self.result)
                 else:
                     self.clear_field()
-                    self.update_display("Μη έγκυρη είσοδος. Παρακαλώ εισάγετε θετικό αριθμό.", "")
+                    self.update_display("Παρακαλώ εισάγετε θετικό αριθμό.", "")
             else:
                 self.clear_field()
                 self.update_display("Δεν υπάρχει προηγούμενο αποτέλεσμα για τον υπολογισμό της τετραγωνικής ρίζας.", "")
         except ValueError:
             self.clear_field()
-            self.update_display("Μη έγκυρη είσοδος. Παρακαλώ εισάγετε έγκυρο αριθμό.", "")
+            self.update_display("Μη έγκυρη είσοδος.", "")
         except:
             self.clear_field()
             self.update_display("Σφάλμα κατά τον υπολογισμό.", "")
@@ -238,16 +260,16 @@ class Calculator:
                     return result
                 else:
                     self.clear_field()
-                    self.update_display("Μη έγκυρη είσοδος. Το n δεν μπορεί να είναι μηδέν.", "")
+                    self.update_display("Το n δεν μπορεί να είναι μηδέν.", "")
             else:
                 self.clear_field()
-                self.update_display("Μη έγκυρη είσοδος. Παρακαλώ εισάγετε έναν μη αρνητικό αριθμό.", "")
+                self.update_display("Παρακαλώ εισάγετε έναν μη αρνητικό αριθμό.", "")
         except ValueError:
             self.clear_field()
-            self.update_display("Μη έγκυρη είσοδος. Παρακαλώ εισάγετε έγκυρο αριθμό για τον εκθέτη της ρίζας.", "")
+            self.update_display("Παρακαλώ εισάγετε έγκυρο αριθμό για τον εκθέτη της ρίζας.", "")
         except ZeroDivisionError:
             self.clear_field()
-            self.update_display("Μη έγκυρη είσοδος. Το n δεν μπορεί να είναι μηδέν.", "")
+            self.update_display("Το n δεν μπορεί να είναι μηδέν.", "")
         except:
             self.clear_field()
             self.update_display("Σφάλμα κατά τον υπολογισμό.", "")
@@ -261,7 +283,7 @@ class Calculator:
             self.update_display(''.join(self.calculation), self.result)
         except ValueError:
             self.clear_field()
-            self.update_display("Μη έγκυρη είσοδος. Παρακαλώ εισάγετε έγκυρο αριθμό.", "")
+            self.update_display("Μη έγκυρη είσοδος.", "")
         except:
             self.clear_field()
             self.update_display("Σφάλμα κατά τον υπολογισμό.", "")
@@ -273,18 +295,18 @@ class Calculator:
                 cal = self.result if (self.result is not None and self.result != "") else expression
                 num = float(eval(cal))
                 if num > 0:
-                    self.result = str(math.log10(num))
-                    self.calculation = [f"log({expression})"]
+                    self.result = str(log10(num))
+                    self.calculation = [f"log10({expression})"]
                     self.update_display(''.join(self.calculation), self.result)
                 else:
                     self.clear_field()
-                    self.update_display("Μη έγκυρη είσοδος. Παρακαλώ εισάγετε θετικό αριθμό για το λογάριθμο.", "")
+                    self.update_display("Παρακαλώ εισάγετε θετικό αριθμό για το λογάριθμο.", "")
             else:
                 self.clear_field()
                 self.update_display("Δεν υπάρχει προηγούμενο αποτέλεσμα για τον υπολογισμό του λογαρίθμου.", "")
         except ValueError:
             self.clear_field()
-            self.update_display("Μη έγκυρη είσοδος. Παρακαλώ εισάγετε έγκυρο αριθμό.", "")
+            self.update_display("Μη έγκυρη είσοδος.", "")
         except:
             self.clear_field()
             self.update_display("Σφάλμα κατά τον υπολογισμό.", "")
@@ -296,18 +318,18 @@ class Calculator:
                 cal = self.result if (self.result is not None and self.result != "") else expression
                 num = float(eval(cal))
                 if num > 0:
-                    self.result = str(math.log(num))
-                    self.calculation = [f"ln({expression})"]
+                    self.result = str(log(num))
+                    self.calculation = [f"log({expression})"]
                     self.update_display(''.join(self.calculation), self.result)
                 else:
                     self.clear_field()
-                    self.update_display("Μη έγκυρη είσοδος. Παρακαλώ εισάγετε θετικό αριθμό για τον φυσικό λογάριθμο.", "")
+                    self.update_display("Παρακαλώ εισάγετε θετικό αριθμό για τον φυσικό λογάριθμο.", "")
             else:
                 self.clear_field()
                 self.update_display("Δεν υπάρχει προηγούμενο αποτέλεσμα για τον υπολογισμό του φυσικού λογαρίθμου.", "")
         except ValueError:
             self.clear_field()
-            self.update_display("Μη έγκυρη είσοδος. Παρακαλώ εισάγετε έγκυρο αριθμό.", "")
+            self.update_display("Μη έγκυρη είσοδος.", "")
         except:
             self.clear_field()
             self.update_display("Σφάλμα κατά τον υπολογισμό.", "")
@@ -316,7 +338,7 @@ class Calculator:
         try:
             expression = ''.join(self.calculation)
             num = float(eval(expression))
-            result = math.exp(num)
+            result = exp(num)
             self.result = f"{result}"
             if num.is_integer():
                 self.calculation = [f"{int(num)}.e"]
@@ -327,7 +349,7 @@ class Calculator:
             self.update_display(''.join(self.calculation), self.result)
         except ValueError:
             self.clear_field()
-            self.update_display("Μη έγκυρη είσοδος. Παρακαλώ εισάγετε έγκυρο αριθμό.", "")
+            self.update_display("Μη έγκυρη είσοδος.", "")
         except:
             self.clear_field()
             self.update_display("Σφάλμα κατά τον υπολογισμό.", "")
@@ -339,67 +361,69 @@ class Calculator:
                 cal = self.result if (self.result is not None and self.result != "") else expression
                 num = int(eval(cal))  # Χρησιμοποιούμε int αντί για float
                 if num >= 0:
-                    result = math.factorial(num)
+                    result = factorial(num)
                     self.result = f"{result}"
-                    self.calculation = [f"fact({num})"]
+                    self.calculation = [f"factorial({num})"]
                     if len(str(self.result)) > 20:  # Χρησιμοποιούμε str(result) για το μήκος
                         result = f"{int(result):.2e}"  # Αναπαράσταση σε επιστημονική μορφή
                         self.result = result
-                    self.update_display(''.join(self.calculation), self.result)
+                self.update_display(''.join(self.calculation), self.result)
             else:
                 self.clear_field()
-                self.update_display("Μη έγκυρη είσοδος. Παρακαλούμε εισάγετε έναν μη αρνητικό ακέραιο αριθμό για το παραγοντικό.", "")
+                self.update_display("Παρακαλούμε εισάγετε έναν μη αρνητικό ακέραιο αριθμό για το παραγοντικό.", "")
         except ValueError:
             self.clear_field()
-            self.update_display("Μη έγκυρη είσοδος. Παρακαλώ εισάγετε έγκυρο ακέραιο αριθμό.", "")
+            self.update_display("Μη έγκυρη είσοδος.", "")
         except:
             self.clear_field()
             self.update_display("Σφάλμα κατά τον υπολογισμό.", "")
 
     def memory_clear(self):
         self.memory.clear()
+        self.clear_field()
 
     def memory_recall(self):
-        self.calculation.append(self.memory.recall())
-        self.update_display(''.join(self.calculation), self.result)
+        calculation_str = ''.join(self.calculation)
+        num = str(self.memory.recall())
+        self.update_display(calculation_str, num)
 
     def memory_add(self):
         try:
-            expression = ''.join(self.calculation)
-            num = float(eval(expression))
+            calculation_str = ''.join(self.calculation)
+            num = eval(calculation_str)
             self.memory.add(num)
-            self.update_display(expression, f"{num} added to memory")
+            self.update_display(''.join(self.calculation), self.memory.recall())
         except ValueError:
             self.clear_field()
-            self.update_display("Μη έγκυρη είσοδος. Παρακαλώ εισάγετε έγκυρο αριθμό.", "")
+            self.update_display("Μη έγκυρη είσοδος.", "")
         except:
             self.clear_field()
-            self.update_display("Σφάλμα κατά τον υπολογισμό.", "")
+            self.update_display("Δεν υπάρχει αριθμός αποθηκευμένος στη μνήμη", "")
 
     def memory_subtract(self):
         try:
-            expression = ''.join(self.calculation)
-            num = float(eval(expression))
+            calculation_str = ''.join(self.calculation)
+            num = eval(calculation_str)
             self.memory.subtract(num)
-            self.update_display(expression, f"{num} subtracted from memory")
+            self.update_display(''.join(self.calculation), self.memory.recall())
         except ValueError:
             self.clear_field()
-            self.update_display("Μη έγκυρη είσοδος. Παρακαλώ εισάγετε έγκυρο αριθμό.", "")
+            self.update_display("Μη έγκυρη είσοδος.", "")
         except:
             self.clear_field()
-            self.update_display("Σφάλμα κατά τον υπολογισμό.", "")
+            self.update_display("Δεν υπάρχει αριθμός αποθηκευμένος στη μνήμη", "")
 
     def memory_store(self):
         try:
-            expression = ''.join(self.calculation)
-            num = float(eval(expression))
+            calculation_str = ''.join(self.calculation)
+            num = eval(calculation_str)
             self.memory.store(num)
-            self.update_display(expression, f"{num} stored in memory")
+            self.update_display(''.join(self.calculation), self.memory.recall())
         except ValueError:
             self.clear_field()
-            self.update_display("Μη έγκυρη είσοδος. Παρακαλώ εισάγετε έγκυρο αριθμό.", "")
+            self.update_display("Μη έγκυρη είσοδος.", "")
         except:
             self.clear_field()
-            self.update_display("Σφάλμα κατά τον υπολογισμό.", "")
+            self.update_display("Δεν υπάρχει αριθμός αποθηκευμένος στη μνήμη", "")
 
 calculator = Calculator()

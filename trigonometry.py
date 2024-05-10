@@ -15,7 +15,7 @@ class TrigonometryMenu:
                          ("sinh", math.sinh, "radians"), ("cosh", math.cosh, "radians"), 
                          ("tanh", math.tanh, "radians"), ("asinh", math.asinh, "degrees"), 
                          ("acosh", math.acosh, "degrees"), ("atanh", math.atanh, "degrees"), 
-                         ("ToRAD", lambda x: x * math.pi / 180, "degrees"), 
+                         ("ToRAD", math.radians, "degrees"), 
                          ("ToDEG", math.degrees, "radians")]
 
         for label, command, unit in button_labels:
@@ -33,10 +33,10 @@ class TrigonometryMenu:
                 self.calculator.add_to_calculation(str(command))
         except ValueError:
             self.calculator.clear_field()
-            self.calculator.update_display(''.join(self.calculator.calculation), "Invalid input. Please enter a valid number.")
+            self.calculator.update_display(''.join(self.calculator.calculation), "Μη έγκυρη είσοδος.")
         except Exception as e:
             self.calculator.clear_field()
-            self.calculator.update_display("Error occurred while calculating.", "")
+            self.calculator.update_display("Εμφανίστηκε σφάλμα κατά τον υπολογισμό.", "")
 
     def compute_trigonometric_function(self, function, unit):
         expression = ''.join(self.calculator.calculation)
@@ -55,7 +55,7 @@ class TrigonometryMenu:
             return result
         else:
             self.calculator.clear_field()
-            self.calculator.update_display("Error: No input provided.", "")
+            self.calculator.update_display("Σφάλμα: Δεν έχει γίνει εισαγωγή.", "")
 
     def update_display(self, expression, result):
         self.calculator.update_display(expression, str(result))

@@ -15,7 +15,7 @@ class Calculator:
 
         self.text_display = tk.Text(self.calculator, height=2, width=40, font=("Arial", 24))
         self.text_display.grid(row=0, column=0, columnspan=5)
-
+        self.calculator.resizable(False, False)
         button_width = self.text_display.winfo_width() // 5  # Adjust according to the number of columns
         button_height = self.text_display.winfo_height()
 

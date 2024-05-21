@@ -426,4 +426,5 @@ class Calculator:
             self.clear_field()
             self.update_display("Δεν υπάρχει αριθμός αποθηκευμένος στη μνήμη", "")
 
-calculator = Calculator()
+if __name__ == "__main__":
+    calculator = Calculator()

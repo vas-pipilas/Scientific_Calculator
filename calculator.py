@@ -11,13 +11,18 @@ class Calculator:
 
         self.calculator = tk.Tk()
         self.calculator.title("Επιστημονικός Υπολογιστής από την ομάδα PLHPRO :) ")
+        self.calculator.configure(background="gray26") 
         self.trigonometry_menu = TrigonometryMenu(self.calculator, self)
 
-        self.text_display = tk.Text(self.calculator, height=2, width=40, font=("Arial", 24))
+        self.text_display = tk.Text(self.calculator, height=2, width=40, font=("Arial", 24), bg="gray26", fg="white") 
         self.text_display.grid(row=0, column=0, columnspan=5)
         self.calculator.resizable(False, False)
+
+        button_padx = 5
+        button_pady = 5
         button_width = self.text_display.winfo_width() // 5  # Adjust according to the number of columns
         button_height = self.text_display.winfo_height()
+
 
         button_data = [
             ("MC", lambda: self.memory_clear()), ("MR", lambda: self.memory_recall()), ("M+", lambda: self.memory_add()),
@@ -25,15 +30,15 @@ class Calculator:
             ("Τριγωνομετρία", self.trigonometry_menu.trigonometry_flyout_window), ("π", lambda: self.add_to_calculation(round(pi, 4))),
             ("e", lambda: self.add_to_calculation(round(e, 4))), ("C", self.clear_field),
             ("AC", lambda: self.clear_last_input_and_memory()),
-            ("1/x", lambda: self.reciprocal()),
+            ("1⁄x", lambda: self.reciprocal()),
             ("|x|", lambda: self.absolute_value()), ("exp", lambda: self.exponential_function_x()),
             ("mod", lambda: self.add_to_calculation("mod")),("<==", lambda: self.clear_last_input()),
-            ("x^2", lambda: self.square_x()), ("(", lambda: self.add_to_calculation("(")),
+            ("x²", lambda: self.square_x()), ("(", lambda: self.add_to_calculation("(")),
             (")", lambda: self.add_to_calculation(")")), ("n!", lambda: self.factorial_x()),
             ("/", lambda: self.add_to_calculation("/")),
             ("x^y", lambda: self.add_to_calculation("**")), ("7", lambda: self.add_to_calculation(7)),
             ("8", lambda: self.add_to_calculation(8)), ("9", lambda: self.add_to_calculation(9)), ("*", lambda: self.add_to_calculation("*")),
-            ("10^x", lambda: self.ten_power_x()), ("4", lambda: self.add_to_calculation(4)),
+            ("10ⁿ", lambda: self.ten_power_x()), ("4", lambda: self.add_to_calculation(4)),
             ("5", lambda: self.add_to_calculation(5)), ("6", lambda: self.add_to_calculation(6)), ("-", lambda: self.add_to_calculation("-")),
             ("log", lambda: self.log_x()), ("1", lambda: self.add_to_calculation(1)),
             ("2", lambda: self.add_to_calculation(2)), ("3", lambda: self.add_to_calculation(3)), ("+", lambda: self.add_to_calculation("+")),
@@ -45,14 +50,19 @@ class Calculator:
         for i, (text, command) in enumerate(button_data):
             row = i // 5 + 3
             column = i % 5
+            button_bg_color = "gray56" if str(text).isdigit() else "gray36"
+            button_relief = "raised" if command else "flat"
             if command:
-                tk.Button(self.calculator, text=text, width=button_width, height=button_height, font=("Arial", 12), command=command).grid(row=row, column=column, columnspan=1, sticky="ew")
+                tk.Button(self.calculator, text=text, width=button_width, height=button_height, font=("Arial", 12), 
+                        command=command, bg=button_bg_color, fg="white", bd=0, borderwidth=1, relief=button_relief, padx=button_padx, pady=button_pady).grid(row=row, column=column, columnspan=1, padx=1, pady=1, sticky="nsew")
             else:
-                tk.Button(self.calculator, text=text, width=button_width, height=button_height, font=("Arial", 12)).grid(row=row, column=column, columnspan=1, sticky="ew")
+                tk.Button(self.calculator, text=text, width=button_width, height=button_height, font=("Arial", 12),
+                        bg=button_bg_color, fg="white", bd=0, borderwidth=1, relief=button_relief, padx=button_padx, pady=button_pady).grid(row=row, column=column, columnspan=1, padx=1, pady=1, sticky="nsew")
 
         
-        total_button_height = button_height * (len(button_data) - 1)
-        window_height = total_button_height * ((len(button_data) - 1) // 5 + 1)
+        total_button_height = button_height * (len(button_data) - 1) 
+        total_padding_height = button_pady * ((len(button_data) - 1)) // 5
+        window_height = total_button_height * ((len(button_data) - 1) // 5 + 2) + total_padding_height
 
         self.calculator.geometry(f"{self.text_display.winfo_reqwidth()}x{window_height}")
 
@@ -102,23 +112,28 @@ class Calculator:
                 x = int(x) if x else n
                 result = self.nth_root_x(n, x)
             else:
-                memory_num = self.memory.recall() if self.memory.recall() is not None else 0
-
-                if calculation_str:
-                    result = eval(calculation_str)
-                else:
-                    result = memory_num
-            if isinstance(result, int):
-                formatted_result = "{:,}".format(result)
-            else:
-                formatted_result = "{:.2f}".format(result)
-
+                result = eval(calculation_str)
             self.result = result
+            formatted_result = self.format_result()
             self.calculation = [str(result)]
             self.update_display(calculation_str, formatted_result)
         except Exception as e:
             self.clear_field()
             self.update_display(f"Σφάλμα: {e}", "")
+
+    def format_result(self):
+        if isinstance(self.result, int):
+            return "{:,}".format(self.result)
+        elif isinstance(self.result, float):
+            result_str = "{:,.2f}".format(self.result)  # Format with two decimal places
+            if '.' in result_str:  # Check if there are decimals
+                integer_part, decimal_part = result_str.split('.')
+                integer_part = "{:,}".format(int(integer_part))  # Format integer part with commas
+                return f"{integer_part}.{decimal_part}"  # Concatenate formatted integer and decimal parts
+            else:
+                return "{:,}".format(int(self.result))  # Format as integer if no decimal part
+        else:
+            return str(self.result)  # For other types, return as string
 
     def calculate_mod(self, dividend, divisor):
         try:
@@ -425,6 +440,3 @@ class Calculator:
         except:
             self.clear_field()
             self.update_display("Δεν υπάρχει αριθμός αποθηκευμένος στη μνήμη", "")
-
-if __name__ == "__main__":
-    calculator = Calculator()

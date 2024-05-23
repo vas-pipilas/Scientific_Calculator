@@ -39,9 +39,13 @@ class TrigonometryMenu:
             self.calculator.update_display("Εμφανίστηκε σφάλμα κατά τον υπολογισμό.", "")
 
     def compute_trigonometric_function(self, function, unit):
+        self.calculator.handle_missing_number()
         expression = ''.join(self.calculator.calculation)
         if self.calculator.result or expression:
             cal = self.calculator.result if (self.calculator.result is not None and self.calculator.result != "") else expression
+            if isinstance(cal, (int, float)) and float(cal).is_integer():
+                # Αν το cal είναι αριθμός και είναι ακέραιος, το μετατρέπει σε string ακέραιου αριθμού
+                cal =  str(int(cal))
             num = float(eval(cal))
             
             if unit == "radians":

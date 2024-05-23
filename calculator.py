@@ -108,6 +108,40 @@ class Calculator:
             self.update_display("3.129E-99", "Επετεύχθη Μέγιστο Μήκος 20 Ψηφίων")  # Εμφάνιση μηνύματος σφάλματος
             self.calculation = []  # Επαναφορά της λίστας υπολογισμού σε κενή κατάσταση
 
+    def handle_missing_number(self):
+        """
+        Αντιμετωπίζει την περίπτωση όπου λείπει ένας αριθμός στην εξίσωση.
+        Αν δεν υπάρχει κανένας αριθμός στην εξίσωση, παίρνει τον αριθμό από τη μνήμη αν είναι διαθέσιμος, αλλιώς θέτει τον αριθμό σε 0.
+        Στη συνέχεια προσθέτει τον αριθμό στο τέλος της εξίσωσης και ενημερώνει την οθόνη εμφάνισης.
+        Εάν υπάρχουν αριθμοί στην εξίσωση, ελέγχει εάν η εξίσωση ξεκινά με έναν τελεστή (+, -, *, /).
+        Σε αυτήν την περίπτωση, προσθέτει τον αριθμό από τη μνήμη αν είναι διαθέσιμος, αλλιώς θέτει τον αριθμό σε 0, στο τέλος της εξίσωσης.
+        Εάν η εξίσωση ξεκινά με έναν τελεστή, προσθέτει τον αριθμό από τη μνήμη αν είναι διαθέσιμος, αλλιώς θέτει τον αριθμό σε 0, στην αρχή της εξίσωσης.
+        """
+        if not any(char.isdigit() for element in self.calculation for char in element):
+            num_from_memory = self.memory.recall()
+            if num_from_memory is not None:
+                self.result = num_from_memory
+            else:
+                self.result = 0
+            self.calculation.append(str(self.result))
+            self.update_display("", str(self.result))
+        else:
+            calculation_str = ''.join(self.calculation)  # Σχηματισμός του υπολογισμού από τη λίστα
+            if calculation_str.endswith('+') or calculation_str.endswith('-') or calculation_str.endswith('*') or calculation_str.endswith('/'):
+                num_from_memory = self.memory.recall()
+                if num_from_memory is not None:
+                    self.calculation.append(str(num_from_memory))
+                else:
+                    self.calculation.append('0')
+                calculation_str = ''.join(self.calculation)
+            if calculation_str.startswith('+') or calculation_str.startswith('-') or calculation_str.startswith('*') or calculation_str.startswith('/'):
+                num_from_memory = self.memory.recall()
+                if num_from_memory is not None:
+                    self.calculation.insert(0, str(num_from_memory))
+                else:
+                    self.calculation.insert(0, '0')        
+                calculation_str = ''.join(self.calculation)
+
     def evaluate_calculation(self):
         try:
             calculation_str = ''.join(self.calculation)  # Σχηματισμός του υπολογισμού από τη λίστα
@@ -122,6 +156,8 @@ class Calculator:
                 x = int(x) if x else n  # Μετατροπή σε ακέραιο του x
                 result = self.nth_root_x(n, x)  # Υπολογισμός της n-οστής ρίζας
             else:
+                self.handle_missing_number()
+                calculation_str = ''.join(self.calculation)
                 result = eval(calculation_str)  # Υπολογισμός του αποτελέσματος
             self.result = result  # Αποθήκευση του αποτελέσματος
             formatted_result = self.format_result()  # Μορφοποίηση του αποτελέσματος
@@ -130,7 +166,6 @@ class Calculator:
         except Exception as e:  # Εάν υπάρξει σφάλμα κατά τον υπολογισμό
             self.clear_field()  # Καθαρισμός του πεδίου εμφάνισης
             self.update_display(f"Σφάλμα: {e}", "")  # Εμφάνιση μηνύματος σφάλματος
-
 
     def format_result(self):
         if isinstance(self.result, int):  # Έλεγχος αν το αποτέλεσμα είναι ακέραιος
@@ -145,7 +180,6 @@ class Calculator:
                 return "{:,}".format(int(self.result))  # Μορφοποίηση ως ακέραιος αν δεν υπάρχουν δεκαδικά
         else:
             return str(self.result)  # Για άλλους τύπους δεδομένων, επιστροφή ως συμβολοσειρά
-
 
     def format_result(self):
         if isinstance(self.result, int):
@@ -193,6 +227,7 @@ class Calculator:
 
     def change_sign(self):
         try:
+            self.handle_missing_number()
             num_str = ''.join(self.calculation)  # Σχηματισμός του αριθμού από τη λίστα υπολογισμού
             num = float(num_str)  # Μετατροπή του αριθμού σε δεκαδικό
             is_integer = num.is_integer()  # Έλεγχος αν ο αριθμός είναι ακέραιος
@@ -208,9 +243,13 @@ class Calculator:
 
     def absolute_value(self):
         try:
+            self.handle_missing_number()
             expression = ''.join(self.calculation)  # Σχηματισμός της έκφρασης από τη λίστα υπολογισμού
             if self.result or expression:  # Έλεγχος αν υπάρχει ήδη αποτέλεσμα ή έκφραση
                 cal = self.result if (self.result is not None and self.result != "") else expression  # Χρήση του αποτελέσματος αν υπάρχει, αλλιώς της έκφρασης
+                if isinstance(cal, (int, float)) and float(cal).is_integer():
+                    # Αν το cal είναι αριθμός και είναι ακέραιος, το μετατρέπει σε string ακέραιου αριθμού
+                    cal =  str(int(cal))
                 num = float(eval(cal))  # Υπολογισμός του αριθμού
                 self.result = str(abs(float(num)))  # Υπολογισμός της απόλυτης τιμής του αριθμού και αποθήκευση στο αποτέλεσμα
                 self.calculation = [f"abs({expression})"]  # Ενημέρωση της λίστας υπολογισμού με την απόλυτη τιμή της έκφρασης
@@ -227,9 +266,13 @@ class Calculator:
 
     def reciprocal(self):
         try:
+            self.handle_missing_number()
             expression = ''.join(self.calculation)  # Σχηματισμός της έκφρασης από τη λίστα υπολογισμού
             if self.result or expression:  # Έλεγχος αν υπάρχει ήδη αποτέλεσμα ή έκφραση
                 cal = self.result if (self.result is not None and self.result != "") else expression  # Χρήση του αποτελέσματος αν υπάρχει, αλλιώς της έκφρασης
+                if isinstance(cal, (int, float)) and float(cal).is_integer():
+                    # Αν το cal είναι αριθμός και είναι ακέραιος, το μετατρέπει σε string ακέραιου αριθμού
+                    cal =  str(int(cal))
                 num = float(eval(cal))  # Υπολογισμός του αριθμού
                 if num != 0:  # Έλεγχος αν ο αριθμός είναι διάφορος του μηδέν
                     self.result = round(1 / num, 5)  # Υπολογισμός του αντίστροφου και κατακερματισμός σε πέντε δεκαδικά ψηφία
@@ -248,6 +291,7 @@ class Calculator:
 
     def square_x(self):
         try:
+            self.handle_missing_number()
             expression = ''.join(self.calculation)  # Σχηματισμός της έκφρασης από τη λίστα υπολογισμού
             if self.result or expression:  # Έλεγχος αν υπάρχει ήδη αποτέλεσμα ή έκφραση
                 cal = self.result if (self.result is not None and self.result != "") else expression  # Χρήση του αποτελέσματος αν υπάρχει, αλλιώς της έκφρασης
@@ -271,9 +315,13 @@ class Calculator:
 
     def square_root_x(self):
         try:
+            self.handle_missing_number()
             expression = ''.join(self.calculation)  # Σχηματισμός της έκφρασης από τη λίστα υπολογισμού
             if self.result or expression:  # Έλεγχος αν υπάρχει ήδη αποτέλεσμα ή έκφραση
                 cal = self.result if (self.result is not None and self.result != "") else expression  # Χρήση του αποτελέσματος αν υπάρχει, αλλιώς της έκφρασης
+                if isinstance(cal, (int, float)) and float(cal).is_integer():
+                    # Αν το cal είναι αριθμός και είναι ακέραιος, το μετατρέπει σε string ακέραιου αριθμού
+                    cal =  str(int(cal))
                 num = float(cal)  # Μετατροπή της έκφρασης σε δεκαδικό αριθμό
                 if(num >= 0):  # Έλεγχος αν ο αριθμός είναι μη αρνητικός
                     self.result = sqrt(num)  # Υπολογισμός της τετραγωνικής ρίζας
@@ -319,7 +367,11 @@ class Calculator:
 
     def ten_power_x(self):
         try:
+            self.handle_missing_number()
             expression = ''.join(self.calculation)  # Σχηματισμός της έκφρασης από τη λίστα υπολογισμού
+            if isinstance(expression, (int, float)) and float(expression).is_integer():
+                # Αν το expression είναι αριθμός και είναι ακέραιος, το μετατρέπει σε string ακέραιου αριθμού
+                expression =  str(int(expression))
             num = float(eval(expression))  # Μετατροπή της έκφρασης σε δεκαδικό αριθμό
             self.result = str(10 ** num)  # Υπολογισμός του 10 στην δύναμη της έκφρασης
             self.calculation = [f"10**{expression}"]  # Ενημέρωση της λίστας υπολογισμού με τη δύναμη του 10
@@ -333,9 +385,13 @@ class Calculator:
 
     def log_x(self):
         try:
+            self.handle_missing_number()
             expression = ''.join(self.calculation)  # Σχηματισμός της έκφρασης από τη λίστα υπολογισμού
             if self.result or expression:  # Έλεγχος αν υπάρχει αποτέλεσμα ή έκφραση
                 cal = self.result if (self.result is not None and self.result != "") else expression  # Επιλογή της αριθμητικής τιμής για τον υπολογισμό του λογαρίθμου
+                if isinstance(cal, (int, float)) and float(cal).is_integer():
+                # Αν το cal είναι αριθμός και είναι ακέραιος, το μετατρέπει σε string ακέραιου αριθμού
+                    cal =  str(int(cal))
                 num = float(eval(cal))  # Μετατροπή της αριθμητικής τιμής σε δεκαδικό αριθμό
                 if num > 0:  # Έλεγχος αν ο αριθμός είναι θετικός
                     self.result = str(log10(num))  # Υπολογισμός του δεκαδικού λογαρίθμου
@@ -343,7 +399,7 @@ class Calculator:
                     self.update_display(''.join(self.calculation), self.result)  # Ενημέρωση της εμφάνισης
                 else:  # Αν ο αριθμός δεν είναι θετικός
                     self.clear_field()  # Καθαρισμός ολόκληρου του πεδίου εμφάνισης
-                    self.update_display("Παρακαλώ εισάγετε θετικό αριθμό για το λογάριθμο.", "")  # Εμφάνιση μηνύματος σφάλματος
+                    self.update_display("Παρακαλώ εισάγετε θετικό αριθμό, μεγαλύτερο από το μηδέν, για το λογάριθμο.", "")  # Εμφάνιση μηνύματος σφάλματος
             else:  # Αν δεν υπάρχει προηγούμενο αποτέλεσμα ή έκφραση
                 self.clear_field()  # Καθαρισμός ολόκληρου του πεδίου εμφάνισης
                 self.update_display("Δεν υπάρχει προηγούμενο αποτέλεσμα για τον υπολογισμό του λογαρίθμου.", "")  # Εμφάνιση μηνύματος σφάλματος
@@ -356,9 +412,13 @@ class Calculator:
 
     def natural_logarithm_x(self):
         try:
+            self.handle_missing_number()
             expression = ''.join(self.calculation)  # Σχηματισμός της έκφρασης από τη λίστα υπολογισμού
             if self.result or expression:  # Έλεγχος αν υπάρχει αποτέλεσμα ή έκφραση
                 cal = self.result if (self.result is not None and self.result != "") else expression  # Επιλογή της αριθμητικής τιμής για τον υπολογισμό του φυσικού λογαρίθμου
+                if isinstance(cal, (int, float)) and float(cal).is_integer():
+                    # Αν το cal είναι αριθμός και είναι ακέραιος, το μετατρέπει σε string ακέραιου αριθμού
+                    cal =  str(int(cal))
                 num = float(eval(cal))  # Μετατροπή της αριθμητικής τιμής σε δεκαδικό αριθμό
                 if num > 0:  # Έλεγχος αν ο αριθμός είναι θετικός
                     self.result = str(log(num))  # Υπολογισμός του φυσικού λογαρίθμου
@@ -379,7 +439,11 @@ class Calculator:
 
     def exponential_function_x(self):
         try:
-            expression = ''.join(self.calculation)  # Σχηματισμός της έκφρασης από τη λίστα υπολογισμού
+            self.handle_missing_number()
+            expression = ''.join(self.calculation ) # Σχηματισμός της έκφρασης από τη λίστα υπολογισμού
+            if isinstance(expression, (int, float)) and float(expression).is_integer():
+                # Αν το expression είναι αριθμός και είναι ακέραιος, το μετατρέπει σε string ακέραιου αριθμού
+                    expression =  str(int(expression))
             num = float(eval(expression))  # Μετατροπή της αριθμητικής τιμής σε δεκαδικό αριθμό
             result = exp(num)  # Υπολογισμός της εκθετικής συνάρτησης
             self.result = f"{result}"  # Καθορισμός του αποτελέσματος ως αλφαριθμητική τιμή
@@ -399,9 +463,13 @@ class Calculator:
 
     def factorial_x(self):
         try:
+            self.handle_missing_number()
             expression = ''.join(self.calculation)  # Σχηματισμός της έκφρασης από τη λίστα υπολογισμού
             if self.result or expression:  # Έλεγχος για την ύπαρξη αποτελέσματος ή έκφρασης
                 cal = self.result if (self.result is not None and self.result != "") else expression  # Επιλογή της έκφρασης από το αποτέλεσμα ή την έκφραση
+                if isinstance(cal, (int, float)) and float(cal).is_integer():
+                # Αν το cal είναι αριθμός και είναι ακέραιος, το μετατρέπει σε string ακέραιου αριθμού
+                    cal =  str(int(cal))
                 num = int(eval(cal))  # Μετατροπή του αριθμού σε ακέραιο
                 if num >= 0:  # Έλεγχος για θετικό αριθμό
                     result = factorial(num)  # Υπολογισμός του παραγοντικού

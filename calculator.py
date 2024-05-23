@@ -1,7 +1,21 @@
 import tkinter as tk
+import multiprocessing
 from math import *
 from memory import Memory  # Εισάγουμε την κλάση Memory από το αρχείο memory.py
 from trigonometry import TrigonometryMenu  # Εισάγουμε το μενού Trigonometry από το αρχείο trigonometry.py
+
+def worker(expr, queue):
+    try:
+        # Define the allowed functions and constants for eval
+        allowed_functions = {
+            "log10": log10, "log": log, "exp": exp, "sqrt": sqrt, "factorial": factorial
+        }
+        result = eval(expr, {"__builtins__": None}, allowed_functions)
+        if isinstance(result, (int, float)) and len(str(result)) > 4300:
+            raise OverflowError("3.129E-99")
+        queue.put(result)
+    except Exception as e:
+        queue.put(f"Error: {e}")
 
 class Calculator:
     def __init__(self):
@@ -142,6 +156,21 @@ class Calculator:
                     self.calculation.insert(0, '0')        
                 calculation_str = ''.join(self.calculation)
 
+    def evaluate_expression(self, expression, timeout=2):
+        queue = multiprocessing.Queue()
+        process = multiprocessing.Process(target=worker, args=(expression, queue))
+        process.start()
+        process.join(timeout)
+
+        if process.is_alive():
+            process.terminate()
+            return "3.129E-99"
+
+        result = queue.get()
+        if isinstance(result, (int, float)) and len(str(result)) > 4300:
+            return "3.129E-99"
+        return result
+
     def evaluate_calculation(self):
         try:
             calculation_str = ''.join(self.calculation)  # Σχηματισμός του υπολογισμού από τη λίστα
@@ -159,10 +188,18 @@ class Calculator:
                 self.handle_missing_number()
                 calculation_str = ''.join(self.calculation)
                 result = eval(calculation_str)  # Υπολογισμός του αποτελέσματος
-            self.result = result  # Αποθήκευση του αποτελέσματος
-            formatted_result = self.format_result()  # Μορφοποίηση του αποτελέσματος
-            self.calculation = [str(result)]  # Ενημέρωση της λίστας υπολογισμού με το αποτέλεσμα
-            self.update_display(calculation_str, formatted_result)  # Ενημέρωση της εμφάνισης
+            self.evaluate_expression(calculation_str)
+            if isinstance(result, str) and result.startswith("Error"):
+                self.clear_field()
+                self.update_display(f"{result}", "")
+            else:
+                self.result = result  # Αποθήκευση του αποτελέσματος
+                formatted_result = self.format_result()  # Μορφοποίηση του αποτελέσματος
+                self.calculation = [str(result)]  # Ενημέρωση της λίστας υπολογισμού με το αποτέλεσμα
+                self.update_display(calculation_str, formatted_result)  # Ενημέρωση της εμφάνισης
+        except ZeroDivisionError:  # Εάν η διαίρεση γίνει με το μηδέν
+            self.clear_field()  # Καθαρισμός του πεδίου εμφάνισης
+            self.update_display(f"Σφάλμα: Διαίρεση με το μηδέν", "")  # Εμφάνιση μηνύματος σφάλματος
         except Exception as e:  # Εάν υπάρξει σφάλμα κατά τον υπολογισμό
             self.clear_field()  # Καθαρισμός του πεδίου εμφάνισης
             self.update_display(f"Σφάλμα: {e}", "")  # Εμφάνιση μηνύματος σφάλματος

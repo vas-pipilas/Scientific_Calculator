@@ -6,15 +6,20 @@ from trigonometry import TrigonometryMenu  # Εισάγουμε το μενού 
 
 def worker(expr, queue):
     try:
-        # Define the allowed functions and constants for eval
+        # Ορισμός των επιτρεπόμενων συναρτήσεων και σταθερών για το eval
         allowed_functions = {
             "log10": log10, "log": log, "exp": exp, "sqrt": sqrt, "factorial": factorial
         }
+        # Αξιολόγηση της έκφρασης
         result = eval(expr, {"__builtins__": None}, allowed_functions)
+        # Έλεγχος εάν το αποτέλεσμα είναι αριθμός και το μήκος του είναι μεγαλύτερο από το όριο
         if isinstance(result, (int, float)) and len(str(result)) > 4300:
+            # Εκτίμηση σφάλματος σε επιστημονική μορφή
             raise OverflowError("3.129E-99")
+        # Τοποθέτηση του αποτελέσματος στην ουρά
         queue.put(result)
     except Exception as e:
+        # Τοποθέτηση μηνύματος σφάλματος στην ουρά
         queue.put(f"Error: {e}")
 
 class Calculator:
@@ -157,18 +162,28 @@ class Calculator:
                 calculation_str = ''.join(self.calculation)
 
     def evaluate_expression(self, expression, timeout=2):
+        # Δημιουργία ουράς για επικοινωνία με τη διεργασία
         queue = multiprocessing.Queue()
+        # Δημιουργία νέας διεργασίας για την εκτέλεση του υπολογισμού
         process = multiprocessing.Process(target=worker, args=(expression, queue))
         process.start()
+        # Αναμονή για την ολοκλήρωση της διεργασίας με timeout
         process.join(timeout)
 
+        # Αν η διεργασία είναι εξακολουθεί ενεργή (δεν ολοκληρώθηκε μέσα στο timeout)
         if process.is_alive():
+            # Τερματισμός της διεργασίας
             process.terminate()
+            # Επιστροφή ενός σφάλματος σε επιστημονική μορφή
             return "3.129E-99"
 
+        # Λήψη του αποτελέσματος από την ουρά
         result = queue.get()
+        # Έλεγχος εάν το αποτέλεσμα είναι αριθμός και η μήκος του είναι μεγαλύτερο από το όριο
         if isinstance(result, (int, float)) and len(str(result)) > 4300:
+            # Επιστροφή σφάλματος σε επιστημονική μορφή
             return "3.129E-99"
+        # Επιστροφή του αποτελέσματος
         return result
 
     def evaluate_calculation(self):

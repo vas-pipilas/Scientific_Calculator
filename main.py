@@ -11,14 +11,14 @@ def worker(expr, queue):
         # Αξιολόγηση της έκφρασης
         result = eval(expr, {"__builtins__": None}, allowed_functions)
         # Έλεγχος εάν το αποτέλεσμα είναι αριθμός και το μήκος του είναι μεγαλύτερο από το όριο
-        if isinstance(result, (int, float)) and len(str(result)) > 4300:
+        if isinstance(result, (int, float)) and len(str(result)) > 20:
             # Εκτίμηση σφάλματος σε επιστημονική μορφή
             raise OverflowError("3.129E-99")                                                                                                                            
         # Τοποθέτηση του αποτελέσματος στην ουρά
         queue.put(result)
     except Exception as e:
         # Τοποθέτηση μηνύματος σφάλματος στην ουρά
-        queue.put(f"Error: {e}")
+        queue.put(f"Error")
 
 class Calculator:
     def __init__(self):
@@ -159,7 +159,7 @@ class Calculator:
                     self.calculation.insert(0, '0')        
                 calculation_str = ''.join(self.calculation)
 
-    def evaluate_expression(self, expression, timeout=2):
+    def evaluate_expression(self, expression, timeout=0):
         # Δημιουργία ουράς για επικοινωνία με τη διεργασία
         queue = multiprocessing.Queue()
         # Δημιουργία νέας διεργασίας για την εκτέλεση του υπολογισμού
@@ -217,7 +217,7 @@ class Calculator:
             self.update_display(f"Σφάλμα: Διαίρεση με το μηδέν", "")  # Εμφάνιση μηνύματος σφάλματος
         except Exception as e:  # Εάν υπάρξει σφάλμα κατά τον υπολογισμό
             self.clear_field()  # Καθαρισμός του πεδίου εμφάνισης
-            self.update_display(f"Σφάλμα: {e}", "")  # Εμφάνιση μηνύματος σφάλματος
+            self.update_display(f"Σφάλμα", "")  # Εμφάνιση μηνύματος σφάλματος
 
     def format_result(self):
         if isinstance(self.result, int):  # Έλεγχος αν το αποτέλεσμα είναι ακέραιος

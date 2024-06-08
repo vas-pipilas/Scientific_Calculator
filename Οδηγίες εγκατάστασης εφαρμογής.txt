@@ -1,0 +1,9 @@
+Οδηγίες εγκατάστασης εφαρμογής scientific_calculator 
+
+Εγκαταστήστε το PyInstaller (αν δεν είναι ήδη εγκατεστημένο) με το τερματικό ή τη γραμμή εντολών, ανοίξτε το τερματικό στη θέση που βρίσκεται το αρχείο py  και χρησιμοποιήστε την ακόλουθη εντολή:
+
+pip install pyinstaller
+
+Αφού εγκατασταθεί το PyInstaller εκτελέστε την εντολή
+
+pyinstaller --onefile --noconsole scientific_calculator.py
